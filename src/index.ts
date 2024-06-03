@@ -7,6 +7,21 @@ import userRouter from "./routes/users";
 const app: Express = express();
 const port = 5000;
 
+let corsOptions = {
+  origin: [
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3000/checkscore",
+    "http://localhost:3000",
+  ],
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+
+// 미들웨어
+app.use(cors(corsOptions));
+app.use(express.json());
+app.use(cookieParser());
+
 // 라우터 임포트
 app.use("/api/users", userRouter);
 
@@ -31,29 +46,22 @@ const queryDatabase = async () => {
 
 queryDatabase();
 
-let corsOptions = {
-  origin: [
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:3000/checkscore",
-    "http://localhost:3000",
-  ],
-  credentials: true,
-};
-
-// 미들웨어
-app.use(cors(corsOptions));
-app.use(express.json());
-app.use(cookieParser());
-
 // 라우터 설정
 
 // 테스트 라우터
 app.get("/", (req: Request, res: Response) => {
-  res.send("Hello World!");
+  console.log(req);
+  res.json({
+    message: "Hello World!",
+    status: 200,
+  });
 });
 
 app.post("/", (req: Request, res: Response) => {
-  res.send("post request");
+  res.json({
+    message: "Hello World!",
+    status: 200,
+  });
 });
 
 app.listen(port, () => {

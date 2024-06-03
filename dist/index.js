@@ -19,6 +19,19 @@ const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const users_1 = __importDefault(require("./routes/users"));
 const app = (0, express_1.default)();
 const port = 5000;
+let corsOptions = {
+    origin: [
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3000/checkscore",
+        "http://localhost:3000",
+    ],
+    credentials: true,
+    optionsSuccessStatus: 200,
+};
+// 미들웨어
+app.use((0, cors_1.default)(corsOptions));
+app.use(express_1.default.json());
+app.use((0, cookie_parser_1.default)());
 // 라우터 임포트
 app.use("/api/users", users_1.default);
 // Postgre DB 연결
@@ -40,25 +53,20 @@ const queryDatabase = () => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 queryDatabase();
-let corsOptions = {
-    origin: [
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:3000/checkscore",
-        "http://localhost:3000",
-    ],
-    credentials: true,
-};
-// 미들웨어
-app.use((0, cors_1.default)({ origin: "http://localhost:3000", credentials: true }));
-app.use(express_1.default.json());
-app.use((0, cookie_parser_1.default)());
 // 라우터 설정
 // 테스트 라우터
 app.get("/", (req, res) => {
-    res.send("Hello World!");
+    console.log(req);
+    res.json({
+        message: "Hello World!",
+        status: 200,
+    });
 });
 app.post("/", (req, res) => {
-    res.send("post request");
+    res.json({
+        message: "Hello World!",
+        status: 200,
+    });
 });
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
