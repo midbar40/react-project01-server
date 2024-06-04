@@ -12,9 +12,9 @@ app.use("/api/users", userRouter);
 
 // Postgre DB 연결
 const pool = new Pool({
-  user: "postgres",
+  user: "myPg",
   host: "localhost",
-  database: "members",
+  database: "junwonSite",
   password: "veritas",
   port: 5432,
 });

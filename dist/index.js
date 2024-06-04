@@ -25,7 +25,7 @@ app.use("/api/users", users_1.default);
 const pool = new pg_1.Pool({
     user: "postgres",
     host: "localhost",
-    database: "members",
+    database: "junwonSite",
     password: "veritas",
     port: 5432,
 });
@@ -49,7 +49,7 @@ let corsOptions = {
     credentials: true,
 };
 // 미들웨어
-app.use((0, cors_1.default)({ origin: "http://localhost:3000", credentials: true }));
+app.use((0, cors_1.default)(corsOptions));
 app.use(express_1.default.json());
 app.use((0, cookie_parser_1.default)());
 // 라우터 설정
