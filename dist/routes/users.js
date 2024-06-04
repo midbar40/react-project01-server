@@ -5,7 +5,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const router = express_1.default.Router();
-router.post("/checkscore", (req, res) => {
-    res.json({ message: "Hello World!" });
+router.post("/", (req, res) => {
+    res.json({
+        message: "아 이런 멍청한 짓을...",
+        status: 200,
+    });
 });
 exports.default = router;
