@@ -4,11 +4,22 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const websearch_1 = __importDefault(require("../websearch"));
+const { getGoogleSearchResults, getNaverSearchResults } = websearch_1.default;
 const router = express_1.default.Router();
 router.post("/", (req, res) => {
-    res.json({
-        message: "아 이런 멍청한 짓을...",
-        status: 200,
-    });
+    // getGoogleSearchResults(req.body.name, 5)
+    // .then(results => {
+    //   console.log(results)
+    //   res.json(results)
+    // })
+    // .catch(err => console.error(err));
+    console.log('리퀘바디', req.body.name);
+    getNaverSearchResults(req.body.name, 5)
+        .then(results => {
+        console.log('출력', results);
+        res.json(results);
+    })
+        .catch(err => console.error(err));
 });
 exports.default = router;

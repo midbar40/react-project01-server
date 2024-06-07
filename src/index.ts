@@ -1,11 +1,18 @@
 import express, { Express, Request, Response } from "express";
 import cors from "cors";
+import dotenv from "dotenv";
+
 import { Pool } from "pg";
 import cookieParser from "cookie-parser";
 import userRouter from "./routes/users";
+import { dot } from "node:test/reporters";
 
+dotenv.config();
 const app: Express = express();
-const port = 5000;
+const port = process.env.PORT || 5000;
+
+const postgrePort : number = process.env.POSTGRE_DB_PORT ? parseInt(process.env.POSTGRE_DB_PORT) : 5432;
+
 
 let corsOptions = {
   origin: [
@@ -20,6 +27,7 @@ let corsOptions = {
 // 미들웨어
 app.use(cors(corsOptions));
 app.use(express.json());
+// app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // 라우터 임포트
@@ -27,43 +35,27 @@ app.use("/api/users", userRouter);
 
 // Postgre DB 연결
 const pool = new Pool({
-  user: "myPg",
-  host: "localhost",
-  database: "junwonSite",
-  password: "veritas",
-  port: 5432,
+  user: process.env.POSTGRE_DB_USER, 
+  host: process.env.POSTGRE_DB_HOST,
+  database: process.env.POSTGRE_DB_DATABASE,
+  password: process.env.POSTGRE_DB_PASSWORD,
+  port: postgrePort,
 });
 
-const queryDatabase = async () => {
-  const client = await pool.connect();
-  try {
-    const res = await client.query("SELECT * FROM users");
-    console.log(res.rows);
-  } finally {
-    client.release();
-  }
-};
 
-queryDatabase();
+// const queryDatabase = async () => {
+//   const client = await pool.connect();
+//   try {
+//     const res = await client.query("SELECT * FROM users");
+//     console.log(res.rows);
+//   } finally {
+//     client.release();
+//   }
+// };
 
-// 라우터 설정
+// queryDatabase();
 
-// 테스트 라우터
-app.get("/", (req: Request, res: Response) => {
-  console.log(req);
-  res.json({
-    message: "Hello World!",
-    status: 200,
-  });
-});
-
-app.post("/", (req: Request, res: Response) => {
-  res.json({
-    message: "Hello World!",
-    status: 200,
-  });
-});
-
+// 서버 설정
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
