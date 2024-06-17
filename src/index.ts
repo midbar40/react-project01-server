@@ -1,18 +1,12 @@
 import express, { Express, Request, Response } from "express";
+import sequelize from "./db/sequelize";
 import cors from "cors";
-import dotenv from "dotenv";
-
-import { Pool } from "pg";
 import cookieParser from "cookie-parser";
-import userRouter from "./routes/users";
+import { userRouter, websearchRouter } from "./routes/index";
 import { dot } from "node:test/reporters";
 
-dotenv.config();
 const app: Express = express();
 const port = process.env.PORT || 5000;
-
-const postgrePort : number = process.env.POSTGRE_DB_PORT ? parseInt(process.env.POSTGRE_DB_PORT) : 5432;
-
 
 let corsOptions = {
   origin: [
@@ -30,30 +24,18 @@ app.use(express.json());
 // app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// 라우터 임포트
-app.use("/api/users", userRouter);
-
-// Postgre DB 연결
-const pool = new Pool({
-  user: process.env.POSTGRE_DB_USER, 
-  host: process.env.POSTGRE_DB_HOST,
-  database: process.env.POSTGRE_DB_DATABASE,
-  password: process.env.POSTGRE_DB_PASSWORD,
-  port: postgrePort,
+// 모든 모델을 동기화
+sequelize.sync({ force : false })
+.then(()=> {
+  console.log('DB 생성 성공');
+})
+.catch((err) => {
+  console.error('DB 생성 실패',err);
 });
 
-
-// const queryDatabase = async () => {
-//   const client = await pool.connect();
-//   try {
-//     const res = await client.query("SELECT * FROM users");
-//     console.log(res.rows);
-//   } finally {
-//     client.release();
-//   }
-// };
-
-// queryDatabase();
+// 라우터 임포트
+app.use("/api/users", userRouter);
+app.use("/api/websearch", websearchRouter);
 
 // 서버 설정
 app.listen(port, () => {

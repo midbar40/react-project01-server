@@ -7,7 +7,7 @@ interface SearchResult {
   snippet: string;
 }
 
-async function getGoogleSearchResults(query: string, pages: number = 1): Promise<SearchResult[]> {
+export async function getGoogleSearchResults(query: string, pages: number = 1): Promise<SearchResult[]> {
   const results: SearchResult[] = [];
   let searchUrl: string = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
 
@@ -42,7 +42,7 @@ async function getGoogleSearchResults(query: string, pages: number = 1): Promise
   return results;
 }
 
-async function getNaverSearchResults(query: string, pages: number = 1): Promise<SearchResult[]> {
+export async function getNaverSearchResults(query: string, pages: number = 1): Promise<SearchResult[]> {
   const results: SearchResult[] = [];
   let searchUrl: string = `https://search.naver.com/search.naver?query=${encodeURIComponent(query)}`;
 
@@ -77,4 +77,3 @@ async function getNaverSearchResults(query: string, pages: number = 1): Promise<
   return results;
 }
 
-export default {getGoogleSearchResults, getNaverSearchResults};
