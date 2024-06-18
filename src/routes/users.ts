@@ -7,8 +7,6 @@ const router = Router();
 router.post("/emailAuth", async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
-    console.log('email', email)
-    console.log('리퀘바디', req.body)
     const emailOption = {
       email: email,
       subject: '이메일 인증을 진행해주세요.',
@@ -20,12 +18,8 @@ router.post("/emailAuth", async (req: Request, res: Response) => {
       console.log('이미 존재하는 회원입니다.')
       res.status(400).json({ message: "aleadyExist" });
     } else {
-      const result = await sendEmail(emailOption);
-     
-      // if(result === 'success'){
-      //   console.log('이메일 전송 성공', result)
-      //   res.status(200).json({ message: "success" });
-      // }
+      const result = await sendEmail(emailOption); // 토큰 생성 후 DB저장 및 이메일 전송
+      res.status(200).json({ message: "success", data: result });
     }
   } catch (error) {
     console.log('이메일 전송 에러', error)
@@ -33,8 +27,27 @@ router.post("/emailAuth", async (req: Request, res: Response) => {
   }
 })
 
+
+// 이메일 인증
+router.get("/verify-email", async (req: Request, res: Response) => {
+  const { token } = req.query;
+  console.log('verify-email 토큰', token)
+  if (token !== '') { // 토큰이 DB와 일치하면
+    res.send(
+      `
+           <script>
+                alert('이메일 인증이 완료되었습니다.');
+                window.close();
+            </script>
+      `
+    )
+    // 페이지 이동
+  } else {
+    res.redirect('http://localhost:3000/signup?status=failed');
+  }
+})
+
 router.post("/signup", async (req: Request, res: Response) => {
-  console.log(req.body);
   try {
     const { email, company, name, contact } = req.body;
     const user = await User.findOne({ where: { email } });
@@ -50,16 +63,6 @@ router.post("/signup", async (req: Request, res: Response) => {
     res.status(400).json({ message: "falied" });
   }
 })
-
-// 이메일 인증
-router.get("/verify-email", async (req: Request, res: Response) => {
-  const { token } = req.query;
-  console.log('토큰', token)
-  res.status(200).json({ message: "success" });
-  // 페이지 이동
-  res.redirect('http://127.0.0.1:3000/register');
-})
-
 
 // 로그인
 router.post("/login", async (req: Request, res: Response) => {
