@@ -33,6 +33,7 @@ sequelize.sync({ force : false })
   console.error('DB 생성 실패',err);
 });
 
+
 // 라우터 임포트
 app.use("/api/users", userRouter);
 app.use("/api/websearch", websearchRouter);

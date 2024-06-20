@@ -15,7 +15,7 @@ interface EmailOptions {
 }
 
 
-export const sendEmail = async ({ email, subject, text, html }: EmailOptions): Promise<void> => {
+export const sendEmail = async ({ email, subject, text, html }: EmailOptions): Promise<any> => {
   // 랜덤 토큰 생성
   const token = crypto.randomBytes(20).toString('hex');
   // 토큰 DB 저장
@@ -48,6 +48,7 @@ export const sendEmail = async ({ email, subject, text, html }: EmailOptions): P
 
     const result = await request;
     console.log('sendEmail result :', result.body)
+    return token;
   } catch (err: any) {
     console.error(err.statusCode);
   }
