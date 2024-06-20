@@ -4,10 +4,10 @@ import { sendEmail } from "../services/mailjet"
 import crypto from 'crypto';
 
 const router = Router();
-const users: ClientMap = {};
+const users: ClientMap = {}; // 클라이언트 객체를 저장할 객체
 
 interface ClientMap {
-  [key: string]: express.Response;
+  [key: string]: express.Response; // key는 string, value는 express.Response인 객체
 }
 
 
@@ -35,17 +35,17 @@ router.post("/emailAuth", async (req: Request, res: Response) => {
   }
 })
 
-//  SSE 이벤트 스트림 설정
+//  Servser-Sent-Event 설정
 router.get('/events', (req: Request, res: Response) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Content-Type', 'text/event-stream'); // 서버가 클라이언트에게 보내는 컨텐츠 타입, text/event-stream은 서버-클라이언트 간의 단방향 통신을 위한 타입
+  res.setHeader('Cache-Control', 'no-cache'); // 클라이언트가 캐싱하지 않도록 설정, 항상 서버로부터 데이터를 받아옴
+  res.setHeader('Connection', 'keep-alive'); // 서버와 클라이언트의 연결 유지, 클라이언트가 연결을 끊을 때까지 계속 연결 유지
 
   const clientId = crypto.randomBytes(16).toString('hex');
-  users[clientId] = res;
+  users[clientId] = res; // users 객체의 key로 클라이언트 아이디, value로 res 객체 저장
 
   req.on('close', () => {
-    delete users[clientId];
+    delete users[clientId]; // 클라이언트 연결 종료 시 users 객체에서 해당 클라이언트 삭제
   });
 });
 
@@ -53,9 +53,9 @@ router.get('/events', (req: Request, res: Response) => {
 router.get('/verify-email', (req: Request, res: Response) => {
   const { token } = req.query as { token?: string };
   console.log('verify-email 토큰', token);
-  if (token) {
-    Object.values(users).forEach(client => {
-      client.write(`data: ${JSON.stringify({ message: 'verified' })}\n\n`);
+  if (token) { 
+    Object.values(users).forEach(client => { // users 객체의 value들을 순회하며, 클라이언트에게 이벤트 전송
+      client.write(`data: ${JSON.stringify({ message: 'verified' })}\n\n`); // \n\n은 이벤트의 끝을 의미
     });
     res.send(
       `
@@ -100,7 +100,7 @@ router.post("/login", async (req: Request, res: Response) => {
     const { email } = req.body;
     const user = await User.findOne({ where: { email } });
     if (user) {
-      console.log('로그인 성공')
+      console.log('로그인 진행중')
       const emailOption = {
         email: email,
         subject: '이메일 인증을 진행해주세요.',
