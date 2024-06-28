@@ -11,7 +11,6 @@ const port = process.env.PORT || 5000;
 let corsOptions = {
   origin: [
     "http://127.0.0.1:3000",
-    "http://127.0.0.1:3000/checkscore",
     "http://localhost:3000",
   ],
   credentials: true,

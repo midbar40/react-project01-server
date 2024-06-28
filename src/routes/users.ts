@@ -65,7 +65,8 @@ router.get('/verify-email', async (req: Request, res: Response) => {
 
   if(user) {// 등록된 유저이면 토큰을 확인하고, login을 위한 쿠키를 설정하고, 이메일 인증 완료 메시지를 보냄
     if(token){
-      res.cookie('midbar_token', generateToken(user), {
+      const cookieToken = generateToken(user);
+      res.cookie('midbar_token', cookieToken, {
                 path: '/',
                 expires: new Date(Date.now() + 900000),
                 httpOnly: true,
@@ -73,7 +74,7 @@ router.get('/verify-email', async (req: Request, res: Response) => {
                 sameSite: 'none',
             })
       Object.values(users).forEach(client => { // users 객체의 value들을 순회하며, 클라이언트에게 이벤트 전송
-        client.write(`data: ${JSON.stringify({ message: 'user_verified' })}\n\n`); // \n\n은 이벤트의 끝을 의미
+        client.write(`data: ${JSON.stringify({ message: 'user_verified', cookieToken })}\n\n`); // \n\n은 이벤트의 끝을 의미
       });
       res.send(
         `

@@ -3,10 +3,6 @@ import {  Request, Response } from "express";
 import User, { UserAttributes   } from './models/User'
 
 const secretKey = process.env.JWT_SECRET || '키가없음'
-interface InstaceError {
-    name: string;
-    message: string;
-}
 
 // accessToken 생성
 export const generateToken = (user: UserAttributes) : string => { //토큰 생성
