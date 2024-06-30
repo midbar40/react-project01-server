@@ -3,6 +3,7 @@ import User from "../models/User";
 import { sendEmail } from "../services/mailjet"
 import crypto from 'crypto';
 import { generateToken } from "../auth";
+import { UserAttributes } from '../models/User'
 
 const router = Router();
 const users: ClientMap = {}; // 클라이언트 객체를 저장할 객체
@@ -12,9 +13,21 @@ interface ClientMap {
   [key: string]: express.Response; // key는 string, value는 express.Response인 객체
 }
 interface EmailMap {
-  [key: string] : string;
+  [key: string]: string;
 }
 
+// 쿠키 발행 함수
+const geneateCookie = (req: Request, res: Response, userdata: UserAttributes) => {
+  const cookieToken = generateToken(userdata);
+  res.cookie('midbar_token', cookieToken, {
+    path: '/',
+    expires: new Date(Date.now() + 900000),
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+  })
+  return cookieToken
+}
 
 // 최초 회원가입화면에서 회원가입 버튼 클릭
 router.post("/emailAuth", async (req: Request, res: Response) => {
@@ -56,23 +69,15 @@ router.get('/events', (req: Request, res: Response) => {
 
 // 이메일 인증 라우터
 router.get('/verify-email', async (req: Request, res: Response) => {
-  const email = emails["email"] 
+  const email = emails["email"]
   console.log('verify-email 이메일', email)
   const user = await User.findOne({ where: { email } });
   const { token } = req.query as { token?: string };
   console.log('verify-email 토큰', token);
 
-
-  if(user) {// 등록된 유저이면 토큰을 확인하고, login을 위한 쿠키를 설정하고, 이메일 인증 완료 메시지를 보냄
-    if(token){
-      const cookieToken = generateToken(user);
-      res.cookie('midbar_token', cookieToken, {
-                path: '/',
-                expires: new Date(Date.now() + 900000),
-                httpOnly: true,
-                secure: true,
-                sameSite: 'none',
-            })
+  if (user) {// 등록된 유저이면 토큰을 확인하고, login을 위한 쿠키를 설정하고, 이메일 인증 완료 메시지를 보냄
+    if (token) {
+      const cookieToken = geneateCookie(req, res, user)
       Object.values(users).forEach(client => { // users 객체의 value들을 순회하며, 클라이언트에게 이벤트 전송
         client.write(`data: ${JSON.stringify({ message: 'user_verified', cookieToken })}\n\n`); // \n\n은 이벤트의 끝을 의미
       });
@@ -84,7 +89,7 @@ router.get('/verify-email', async (req: Request, res: Response) => {
         </script>
         `
       );
-    }else {
+    } else {
       res.send(
         `
         <script>
@@ -94,27 +99,28 @@ router.get('/verify-email', async (req: Request, res: Response) => {
         `
       );
     }
-  }else{// 등록된 유저가 아니면 토큰을 확인하고 이메일 인증 확인 메시지를 보냄
-  if (token) { 
-    Object.values(users).forEach(client => { // users 객체의 value들을 순회하며, 클라이언트에게 이벤트 전송
-      client.write(`data: ${JSON.stringify({ message: 'verified' })}\n\n`); // \n\n은 이벤트의 끝을 의미
-    });
-    res.send(
-      `
+  } else {// 등록된 유저가 아니면 토큰을 확인하고 이메일 인증 확인 메시지를 보냄
+    if (token) {
+      Object.values(users).forEach(client => { // users 객체의 value들을 순회하며, 클라이언트에게 이벤트 전송
+        client.write(`data: ${JSON.stringify({ message: 'verified' })}\n\n`); // \n\n은 이벤트의 끝을 의미
+      });
+      res.send(
+        `
       <script>
           alert('이메일 인증이 완료되었습니다.');
           window.close();
       </script>
       `
-    );
-  } else {
-    `
+      );
+    } else {
+      `
     <script>
         alert('이메일 인증에 실패하였습니다.');
         window.close();
     </script>
     `
-  }}
+    }
+  }
 });
 
 // 정보 모두 입력 후 회원가입 버튼 클릭
@@ -126,10 +132,15 @@ router.post("/signup", async (req: Request, res: Response) => {
       console.log('이미 존재하는 회원입니다.')
       res.status(400).json({ message: "aleadyExist" });
     } else {
-      const newUser = User.create({ email, company, name, contact, createdAt: new Date(), updatedAt: new Date()});
+      const newUser = await User.create({ email, company, name, contact, createdAt: new Date(), updatedAt: new Date() });
       console.log('회원가입 성공 :', newUser)
       // 쿠키설정 및 로그인 처리
-      res.status(200).json({ message: "success", data: newUser });
+      const cookieToken = geneateCookie(req, res, newUser)
+      console.log('회원가입 성공 후 쿠키토큰 :', cookieToken)
+      Object.values(users).forEach(client => { // users 객체의 value들을 순회하며, 클라이언트에게 이벤트 전송
+        client.write(`data: ${JSON.stringify({ message: 'user_verified', cookieToken })}\n\n`); // \n\n은 이벤트의 끝을 의미
+      });
+      res.status(200).json({ message: "success" });
     }
   } catch (error) {
     console.log('회원가입 실패', error)
@@ -156,7 +167,7 @@ router.post("/login", async (req: Request, res: Response) => {
       res.status(200).json({ message: "success", data: user });
     } else {
       console.log('로그인 실패')
-      res.status(400).json({ message: "failed" });
+      res.status(400).json({ message: "notExist" });
     }
   } catch (error) {
     console.log('로그인 에러', error)
