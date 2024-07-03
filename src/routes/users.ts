@@ -164,7 +164,7 @@ router.post("/login", async (req: Request, res: Response) => {
         html: '아래 링크를 클릭하여 이메일 인증을 진행해주세요.'
       }
       const result = await sendEmail(emailOption); // 토큰 생성 후 DB저장 및 이메일 전송
-      res.status(200).json({ message: "success", data: user });
+      res.status(200).json({ message: "success"});
     } else {
       console.log('로그인 실패')
       res.status(400).json({ message: "notExist" });
@@ -172,6 +172,18 @@ router.post("/login", async (req: Request, res: Response) => {
   } catch (error) {
     console.log('로그인 에러', error)
     res.status(400).json({ message: "로그인 에러" });
+  }
+});
+
+// user 정보 가져오기
+router.get("/info", async (req: Request, res: Response) => {
+  try {
+    const user = await User.findOne({ where: { email: emails["email"] } });
+    console.log('user 정보 가져오기 :', user)
+    res.status(200).json({ message: 'success', data: user });
+  } catch (error) {
+    console.log('user 정보 가져오기 에러', error)
+    res.status(401).json({ message: '유저정보를 가져오는데 실패했습니다.' })
   }
 });
 
