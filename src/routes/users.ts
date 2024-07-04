@@ -187,4 +187,15 @@ router.get("/info", async (req: Request, res: Response) => {
   }
 });
 
+// 로그아웃
+router.get("/logout", async (req: Request, res: Response) => {
+  try {
+    res.clearCookie('midbar_token')
+    res.status(200).json({ message: '로그아웃에 성공했습니다.' })
+  } catch (error) {
+    console.log('로그아웃 에러', error)
+    res.status(401).json({ message: '로그아웃에 실패했습니다.' })
+  }
+})
+
 export default router;
