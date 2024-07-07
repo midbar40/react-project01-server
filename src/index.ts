@@ -3,7 +3,8 @@ import sequelize from "./db/sequelize";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { userRouter, websearchRouter } from "./routes/index";
-import { dot } from "node:test/reporters";
+import dotenv from "dotenv";
+dotenv.config();
 
 const app: Express = express();
 const port = process.env.PORT || 5000;
