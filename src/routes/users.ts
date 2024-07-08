@@ -25,7 +25,7 @@ const setAccessTokenCookie = (req: Request, res: Response, userdata: UserAttribu
     expires: new Date(Date.now() + 1000 * 60 * 15), // 15분
     httpOnly: true,
     secure: true,
-    sameSite: 'none',
+    sameSite: 'lax',
   })
   return accessToken
 }
@@ -38,7 +38,7 @@ const setRefreshTokenCookie = (req: Request, res: Response, userdata: UserAttrib
     expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7), // 7일
     httpOnly: true,
     secure: true,
-    sameSite: 'none',
+    sameSite: 'lax',
   })
   return refreshToken
 }
