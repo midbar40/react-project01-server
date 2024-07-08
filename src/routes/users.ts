@@ -22,7 +22,7 @@ const setAccessTokenCookie = (req: Request, res: Response, userdata: UserAttribu
   const accessToken = generateAccessToken(userdata);
   res.cookie('accessToken', accessToken, {
     path: '/',
-    expires: new Date(Date.now() + 60 * 15), // 15분
+    expires: new Date(Date.now() + 1000 * 60 * 15), // 15분
     httpOnly: true,
     secure: true,
     sameSite: 'none',
@@ -35,7 +35,7 @@ const setRefreshTokenCookie = (req: Request, res: Response, userdata: UserAttrib
   const refreshToken = generateRefreshToken(userdata);
   res.cookie('refreshToken', refreshToken, {
     path: '/',
-    expires: new Date(Date.now() + 60 * 60 * 24 * 7), // 7일 
+    expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7), // 7일
     httpOnly: true,
     secure: true,
     sameSite: 'none',
@@ -222,17 +222,17 @@ router.get("/check-login", verifyAccessToken, async (req: Request, res: Response
     res.status(200).json({ isLoggedIn: true, user: req.user });
   } catch (error) {
     console.log('로그인상태 에러', error)
-    res.status(401).json({ message: '로그인상태를 확인하는데 실패했습니다.' })
+    res.status(401).json({ isLoggedIn: false, message: '로그인상태를 확인하는데 실패했습니다.' })
   }
 });
 
 // refreshToken으로 accessToken 재발급
 router.get("/refresh-token", verifyRefreshToken, async (req: Request, res: Response) => {
   try {
-    res.status(200).json({ message: 'refreshTokein is valid'})
+    res.status(200).json({ refreshIsValid : true, message: 'refreshTokein is valid'})
   } catch (error) {
     console.log('refreshToken 에러', error)
-    res.status(401).json({ message: 'refreshToken 에러' })
+    res.status(401).json({ refreshIsValid : false, message: 'refreshToken 에러' })
   }
 });
 

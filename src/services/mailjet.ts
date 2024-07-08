@@ -1,10 +1,13 @@
 import mailjet from 'node-mailjet';
 import crypto from 'crypto';
 
+const mailjetApiKeys = process.env.MAILJET_API_KEYS;
+const mailjetSecretKeys = process.env.MAILJET_SECRET_KEYS;
+
 // Mailjet API를 사용하기 위한 클라이언트 생성
 const mailjetClient = mailjet.apiConnect(
-  process.env.Mailjet_API_Keys || '',
-  process.env.Mailjet_Secret_Keys || ''
+  mailjetApiKeys as string,
+  mailjetSecretKeys as string
 );
 
 interface EmailOptions {
