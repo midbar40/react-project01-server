@@ -3,7 +3,6 @@ import User from "../models/User";
 import { sendEmail } from "../services/mailjet"
 import crypto from 'crypto';
 import { generateAccessToken, generateRefreshToken, verifyAccessToken, verifyRefreshToken } from "../auth";
-import { UserAttributes } from '../models/User'
 
 
 const router = Router();
@@ -18,8 +17,8 @@ interface EmailMap {
 }
 
 // 쿠키 발행 함수 : accessToken이 담긴 쿠키
-const setAccessTokenCookie = (req: Request, res: Response, userdata: UserAttributes) => {
-  const accessToken = generateAccessToken(userdata);
+const setAccessTokenCookie = (req: Request, res: Response) => {
+  const accessToken = generateAccessToken();
   res.cookie('accessToken', accessToken, {
     path: '/',
     expires: new Date(Date.now() + 1000 * 60 * 15), // 15분
@@ -31,8 +30,8 @@ const setAccessTokenCookie = (req: Request, res: Response, userdata: UserAttribu
 }
 
 // 쿠키 발행 함수 : accessToken이 담긴 쿠키
-const setRefreshTokenCookie = (req: Request, res: Response, userdata: UserAttributes) => {
-  const refreshToken = generateRefreshToken(userdata);
+const setRefreshTokenCookie = (req: Request, res: Response) => {
+  const refreshToken = generateRefreshToken();
   res.cookie('refreshToken', refreshToken, {
     path: '/',
     expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7), // 7일
@@ -91,8 +90,8 @@ router.get('/verify-email', async (req: Request, res: Response) => {
 
   if (user) {// 로그인 : 등록된 유저이면 토큰을 확인하고, login을 위한 쿠키를 설정하고, 이메일 인증 완료 메시지를 보냄
     if (token) {
-      const accessToken = setAccessTokenCookie(req, res, user)
-      const refreshToken = setRefreshTokenCookie(req, res, user)
+      const accessToken = setAccessTokenCookie(req, res)
+      const refreshToken = setRefreshTokenCookie(req, res)
       console.log('accessToken :', accessToken, 'refreshToken :', refreshToken)
       Object.values(users).forEach(client => { // users 객체의 value들을 순회하며, 클라이언트에게 이벤트 전송
         client.write(`data: ${JSON.stringify({ message: 'user_verified' })}\n\n`); // \n\n은 이벤트의 끝을 의미
@@ -151,8 +150,8 @@ router.post("/signup", async (req: Request, res: Response) => {
       const newUser = await User.create({ email, company, name, contact, createdAt: new Date(), updatedAt: new Date() });
       console.log('회원가입 성공 :', newUser)
       // 쿠키설정 및 로그인 처리
-      const accessToken = setAccessTokenCookie(req, res, newUser)
-      const refreshToken = setRefreshTokenCookie(req, res, newUser)
+      const accessToken = setAccessTokenCookie(req, res)
+      const refreshToken = setRefreshTokenCookie(req, res)
 
       Object.values(users).forEach(client => { // users 객체의 value들을 순회하며, 클라이언트에게 이벤트 전송
         client.write(`data: ${JSON.stringify({ message: 'user_verified' })}\n\n`); // \n\n은 이벤트의 끝을 의미

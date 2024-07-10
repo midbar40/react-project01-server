@@ -6,29 +6,25 @@ const accessTokenKey = process.env.JWT_SECRET_AccessToken
 const refreshTokenKey = process.env.JWT_SECRET_RefreshToken
 
 // accessToken 생성
-export const generateAccessToken = (user: UserAttributes) : string => { 
+export const generateAccessToken = () : string => { 
     return jwt.sign({
-        name: user.name,
-        email: user.email,
-        createdAt:user.createdAt,
+        iss: 'cutomer-finder',
+        iat : Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 60 * 15 // 15분
     },
     accessTokenKey,  
-    {
-        expiresIn: '15m', 
-    })
+   )
 }
 
 // refreshToken 생성
-export const generateRefreshToken = (user:UserAttributes) : string => {
+export const generateRefreshToken = () : string => {
     return jwt.sign({
-        name: user.name,
-        email: user.email,
-        createdAt: user.createdAt
-    },
+        iss: 'cutomer-finder',
+        iat : Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7 // 7일
+            },
     refreshTokenKey,
-    {
-        expiresIn: '7d'
-    })
+    )
 }
 
 // 쿠키 파싱 함수
