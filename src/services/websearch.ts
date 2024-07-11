@@ -1,10 +1,11 @@
 import fetch from 'node-fetch';
-import * as cheerio from 'cheerio';
+import * as cheerio from 'cheerio';4
+import { v4 } from 'uuid';
 
 interface GoogleSearchResult {
+  key : string;
   title: string;
   link?: string;
-  snippet: string;
 }
 
 interface NaverSearchResult {
@@ -12,36 +13,43 @@ interface NaverSearchResult {
 }
 
 interface PopularSearchResult extends NaverSearchResult {
+  key : string;
   title: string;
   link?: string;
 }
 
 interface NewsSearchResult extends NaverSearchResult {
+  key : string;
   title: string;
   link?: string;
 }
 
 interface ListSearchResult extends NaverSearchResult {
+  key : string;
   title: string;
   link?: string;
 }
 
 interface QuestionSearchResult extends NaverSearchResult {
+  key : string;
   title: string;
   link?: string;
 }
 
 interface PowerlinkSearchResult extends NaverSearchResult {
+  key : string;
   title: string;
   link?: string;
 }
 
 interface MainbannerSearchResult extends NaverSearchResult {
+  key : string;
   title: string;
   link?: string;
 }
 
 interface BrandContentSearchResult extends NaverSearchResult {
+  key : string;
   title: string;
   link?: string;
 }
@@ -61,11 +69,11 @@ export async function getGoogleSearchResults(query: string, query2: string, page
     const $ = cheerio.load(data);
     // 검색 결과 추출
     $('div.g').each((index: number, element: any) => {
+      const key: string = v4();
       const title: string = $(element).find('h3').text();
       const link: string | undefined = $(element).find('a').attr('href');
-      const snippet: string = $(element).find('.IsZvec').text();
       if (link) { // 링크가 존재할 때만 결과에 추가
-        results.push({ title, link, snippet });
+        results.push({ key, title, link });
       }
     });
 
@@ -98,58 +106,65 @@ export async function getNaverSearchResults(query: string, query2: string, pages
 
     // 인기글
     $('div.title_area').each((index: number, element: any) => {
+      const key: string = v4();
       const title: string = $(element).text() 
       const link: string | undefined = $(element).find('a').attr('href')
       if (link) {
-        results.push({ type : 'popular',title, link });
+        results.push({ key, type : 'popular',title, link });
       }
     })
     // 뉴스
     $('a.news_tit').each((index: number, element: any)  => {
+      const key: string = v4();
       const title: string = $(element).text()
       const link: string | undefined = $(element).attr('href')
       if (link) {
-        results.push({ type:'news', title, link });
+        results.push({ key, type:'news', title, link });
       }
     })
     // 리스트글 : 검색결과 더보기 
     $('div.total_tit').each((index: number, element: any)  => {
+      const key: string = v4();
       const title: string = $(element).text() 
       const link: string | undefined = $(element).find('a').attr('href')
       if (link) {
-        results.push({ type:'list', title, link });
+        results.push({ key, type:'list', title, link });
       }
     })
     // 지식인
     $('div.question_group').each((index: number, element: any)  => {
+      const key: string = v4();
       const title: string = $(element).text() 
       const link: string | undefined = $(element).find('a').attr('href')
       if (link) {
-        results.push({ type: 'question', title, link });
+        results.push({ key, type: 'question', title, link });
       }
     })
     // 파워링크
     $('a.lnk_head').each((index: number, element: any)  => {
+      const key: string = v4();
       const title: string = $(element).text()
       const link: string | undefined = $(element).attr('href')
       if (link) {
-        results.push({ type:'powerlink', title, link });
+        results.push({ key, type:'powerlink', title, link });
       }
     })
     // 메인배너, 이미지,동영상,최상단
     $('a.main_title').each((index: number, element: any)  => {
+      const key: string = v4();
       const title: string = $(element).text()
       const link: string | undefined = $(element).attr('href')
       if (link) {
-        results.push({ type:'mainbanner', title, link });
+        results.push({ key, type:'mainbanner', title, link });
       }
     })
     // 브랜드콘텐츠 : 쿼리가 하나일 때만 검색결과가 존재한다
     $('a.fds-comps-right-image-text-title').each((index: number, element: any)  => {
+      const key: string = v4();
       const title: string = $(element).text()
       const link: string | undefined = $(element).attr('href')
       if (link) {
-        results.push({ type:'brandContent', title, link });
+        results.push({ key, type:'brandContent', title, link });
       }
     })
 
