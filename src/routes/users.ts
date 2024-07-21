@@ -228,10 +228,10 @@ router.get("/check-login", verifyAccessToken, async (req: Request, res: Response
 // refreshToken으로 accessToken 재발급
 router.get("/refresh-token", verifyRefreshToken, async (req: Request, res: Response) => {
   try {
-    res.status(200).json({ refreshIsValid : true, message: 'refreshTokein is valid'})
+    res.status(200).json({ refreshIsValid: true, message: 'refreshTokein is valid' })
   } catch (error) {
     console.log('refreshToken 에러', error)
-    res.status(401).json({ refreshIsValid : false, message: 'refreshToken 에러' })
+    res.status(401).json({ refreshIsValid: false, message: 'refreshToken 에러' })
   }
 });
 

@@ -1,55 +1,56 @@
 import fetch from 'node-fetch';
-import * as cheerio from 'cheerio';4
+import * as cheerio from 'cheerio'; 4
 import { v4 } from 'uuid';
 
 interface GoogleSearchResult {
-  key : string;
+  key: string;
+  type?: string;
   title: string;
   link?: string;
 }
 
 interface NaverSearchResult {
- type : 'popular' | 'news' | 'list' | 'question' | 'powerlink' | 'mainbanner' | 'brandContent'
+  type: '인기검색' | '뉴스' | '리스트' | '지식인' | '파워링크' | '메인배너' | '브랜드콘텐츠'
 }
 
 interface PopularSearchResult extends NaverSearchResult {
-  key : string;
+  key: string;
   title: string;
   link?: string;
 }
 
 interface NewsSearchResult extends NaverSearchResult {
-  key : string;
+  key: string;
   title: string;
   link?: string;
 }
 
 interface ListSearchResult extends NaverSearchResult {
-  key : string;
+  key: string;
   title: string;
   link?: string;
 }
 
 interface QuestionSearchResult extends NaverSearchResult {
-  key : string;
+  key: string;
   title: string;
   link?: string;
 }
 
 interface PowerlinkSearchResult extends NaverSearchResult {
-  key : string;
+  key: string;
   title: string;
   link?: string;
 }
 
 interface MainbannerSearchResult extends NaverSearchResult {
-  key : string;
+  key: string;
   title: string;
   link?: string;
 }
 
 interface BrandContentSearchResult extends NaverSearchResult {
-  key : string;
+  key: string;
   title: string;
   link?: string;
 }
@@ -77,9 +78,53 @@ export async function getGoogleSearchResults(query: string, query2: string, page
       }
     });
 
+    // 구글 스폰서 콘텐츠 코드 추가, pc마다 달라지는지 확인필요
+    $('div.CCgQ5 vCa9Yd QfkTvb N8QANc Va3FIb EE3Upf').each((index: number, element: any) => {
+      const key: string = v4();
+      const title: string = $(element).find('h3').text();
+      const link: string | undefined = $(element).find('a').attr('href');
+      if (link) { // 링크가 존재할 때만 결과에 추가
+        results.push({ type: 'sponser-one', key, title, link });
+      }
+    });
+    $('div.RnJeZd top pla-unit-title').each((index: number, element: any) => {
+      const key: string = v4();
+      const title: string = $(element).find('h3').text();
+      const link: string | undefined = $(element).find('a').attr('href');
+      if (link) { // 링크가 존재할 때만 결과에 추가
+        results.push({ type: 'sponser-two', key, title, link });
+      }
+    });
+    // 구글 주요뉴스
+    $('div.n0jPhd ynAwRc tNxQIb nDgy9d').each((index: number, element: any) => {
+      const key: string = v4();
+      const title: string = $(element).find('h3').text();
+      const link: string | undefined = $(element).find('a').attr('href');
+      if (link) { // 링크가 존재할 때만 결과에 추가
+        results.push({ type: 'news-one', key, title, link });
+      }
+    });
+    $('div.y05Tsc tNxQIb ynAwRc OSrXXb').each((index: number, element: any) => {
+      const key: string = v4();
+      const title: string = $(element).find('h3').text();
+      const link: string | undefined = $(element).find('a').attr('href');
+      if (link) { // 링크가 존재할 때만 결과에 추가
+        results.push({ type: 'news-two', key, title, link });
+      }
+    });
+    // 관련검색어
+    $('div.wyccme').each((index: number, element: any) => {
+      const key: string = v4();
+      const title: string = $(element).find('h3').text();
+      const link: string | undefined = $(element).find('a').attr('href');
+      if (link) { // 링크가 존재할 때만 결과에 추가
+        results.push({ type: 'relatedKeyword', key, title, link });
+      }
+    });
     // 다음 페이지의 URL 찾기
     const nextPageLink: string | undefined = $('a#pnnext').attr('href');
     if (!nextPageLink) {
+      console.log('여기 들어오긴하니')
       break; // 다음 페이지가 없으면 종료
     }
     searchUrl = `https://www.google.com${nextPageLink}`;
@@ -107,70 +152,69 @@ export async function getNaverSearchResults(query: string, query2: string, pages
     // 인기글
     $('div.title_area').each((index: number, element: any) => {
       const key: string = v4();
-      const title: string = $(element).text() 
+      const title: string = $(element).text()
       const link: string | undefined = $(element).find('a').attr('href')
       if (link) {
-        results.push({ key, type : 'popular',title, link });
+        results.push({ key, type: '인기검색', title, link });
       }
     })
     // 뉴스
-    $('a.news_tit').each((index: number, element: any)  => {
+    $('a.news_tit').each((index: number, element: any) => {
       const key: string = v4();
       const title: string = $(element).text()
       const link: string | undefined = $(element).attr('href')
       if (link) {
-        results.push({ key, type:'news', title, link });
+        results.push({ key, type: '뉴스', title, link });
       }
     })
     // 리스트글 : 검색결과 더보기 
-    $('div.total_tit').each((index: number, element: any)  => {
+    $('div.total_tit').each((index: number, element: any) => {
       const key: string = v4();
-      const title: string = $(element).text() 
+      const title: string = $(element).text()
       const link: string | undefined = $(element).find('a').attr('href')
       if (link) {
-        results.push({ key, type:'list', title, link });
+        results.push({ key, type: '리스트', title, link });
       }
     })
     // 지식인
-    $('div.question_group').each((index: number, element: any)  => {
+    $('div.question_group').each((index: number, element: any) => {
       const key: string = v4();
-      const title: string = $(element).text() 
+      const title: string = $(element).text()
       const link: string | undefined = $(element).find('a').attr('href')
       if (link) {
-        results.push({ key, type: 'question', title, link });
+        results.push({ key, type: '지식인', title, link });
       }
     })
     // 파워링크
-    $('a.lnk_head').each((index: number, element: any)  => {
+    $('a.lnk_head').each((index: number, element: any) => {
       const key: string = v4();
-      const title: string = $(element).text()
+      const title: string = $(element).text().replace(/[\s\n]+/g, ''); // 공백과 줄바꿈 문자 제거 regex
       const link: string | undefined = $(element).attr('href')
       if (link) {
-        results.push({ key, type:'powerlink', title, link });
+        results.push({ key, type: '파워링크', title, link });
       }
     })
     // 메인배너, 이미지,동영상,최상단
-    $('a.main_title').each((index: number, element: any)  => {
+    $('a.main_title').each((index: number, element: any) => {
       const key: string = v4();
       const title: string = $(element).text()
       const link: string | undefined = $(element).attr('href')
       if (link) {
-        results.push({ key, type:'mainbanner', title, link });
+        results.push({ key, type: '메인배너', title, link });
       }
     })
     // 브랜드콘텐츠 : 쿼리가 하나일 때만 검색결과가 존재한다
-    $('a.fds-comps-right-image-text-title').each((index: number, element: any)  => {
+    $('a.fds-comps-right-image-text-title').each((index: number, element: any) => {
       const key: string = v4();
       const title: string = $(element).text()
       const link: string | undefined = $(element).attr('href')
       if (link) {
-        results.push({ key, type:'brandContent', title, link });
+        results.push({ key, type: '브랜드콘텐츠', title, link });
       }
     })
 
-    console.log('네이버 크롤링결과', results)
     // 다음 페이지의 URL 찾기
-    const nextPageLink: string | undefined = $('div.sc_page_inner').find('a').attr('href');
+    const nextPageLink: string | undefined = $('a.btn_next').attr('href');
     if (!nextPageLink) {
       break; // 다음 페이지가 없으면 종료
     }
