@@ -74,53 +74,65 @@ export async function getGoogleSearchResults(query: string, query2: string, page
       const title: string = $(element).find('h3').text();
       const link: string | undefined = $(element).find('a').attr('href');
       if (link) { // 링크가 존재할 때만 결과에 추가
-        results.push({ key, title, link });
+        results.push({ type:'일반검색',key, title, link });
       }
     });
-
-    // 구글 스폰서 콘텐츠 코드 추가, pc마다 달라지는지 확인필요
-    $('div.CCgQ5 vCa9Yd QfkTvb N8QANc Va3FIb EE3Upf').each((index: number, element: any) => {
+    // 구글 스폰서 콘텐츠 코드 텍스트형, pc마다 달라지는지 확인필요
+    $('div.v5yQqb').each((index: number, element: any) => {
       const key: string = v4();
-      const title: string = $(element).find('h3').text();
+      const title: string = $(element).find('span').text();
       const link: string | undefined = $(element).find('a').attr('href');
       if (link) { // 링크가 존재할 때만 결과에 추가
-        results.push({ type: 'sponser-one', key, title, link });
+        results.push({ type: '스폰서', key, title, link });
       }
     });
-    $('div.RnJeZd top pla-unit-title').each((index: number, element: any) => {
+     // 구글 스폰서 콘텐츠 코드 이미지박스형, pc마다 달라지는지 확인필요
+     $('div.top-pla-group-inner').each((index: number, element: any) => {
       const key: string = v4();
-      const title: string = $(element).find('h3').text();
+      const title: string = $(element).find('span').text();
       const link: string | undefined = $(element).find('a').attr('href');
       if (link) { // 링크가 존재할 때만 결과에 추가
-        results.push({ type: 'sponser-two', key, title, link });
+        results.push({ type: '스폰서', key, title, link });
+      }
+    });
+    // 구글 동영상
+    $('div.KYaZsb').each((index: number, element: any) => {
+      const key: string = v4();
+      const title: string = $(element).find('span.cHaqb').text();
+      const link: string | undefined = $(element).find('a.xMqpbd').last().attr('href');
+      if (link) { // 링크가 존재할 때만 결과에 추가
+        results.push({ type: '동영상', key, title, link });
+      }
+    });
+     // 구글 이미지
+     $('a.EZAeBe').each((index: number, element: any) => {
+      const key: string = v4();
+      const title: string = $(element).find('div.toI8Rb').text();
+      const link: string | undefined = $(element).attr('href');
+      if (link) { // 링크가 존재할 때만 결과에 추가
+        results.push({ type: '동영상', key, title, link });
       }
     });
     // 구글 주요뉴스
-    $('div.n0jPhd ynAwRc tNxQIb nDgy9d').each((index: number, element: any) => {
+    $('a.YKoRaf').each((index: number, element: any) => {
       const key: string = v4();
-      const title: string = $(element).find('h3').text();
-      const link: string | undefined = $(element).find('a').attr('href');
+      const title: string = $(element).find('div.n0jPhd').text();
+      const link: string | undefined = $(element).attr('href');
       if (link) { // 링크가 존재할 때만 결과에 추가
-        results.push({ type: 'news-one', key, title, link });
-      }
-    });
-    $('div.y05Tsc tNxQIb ynAwRc OSrXXb').each((index: number, element: any) => {
-      const key: string = v4();
-      const title: string = $(element).find('h3').text();
-      const link: string | undefined = $(element).find('a').attr('href');
-      if (link) { // 링크가 존재할 때만 결과에 추가
-        results.push({ type: 'news-two', key, title, link });
+        results.push({ type: '뉴스', key, title, link });
       }
     });
     // 관련검색어
-    $('div.wyccme').each((index: number, element: any) => {
+    $('a.ngTNl').each((index: number, element: any) => {
       const key: string = v4();
-      const title: string = $(element).find('h3').text();
-      const link: string | undefined = $(element).find('a').attr('href');
+      const title: string = $(element).find('span').text();
+      const link: string | undefined = $(element).attr('href');
       if (link) { // 링크가 존재할 때만 결과에 추가
-        results.push({ type: 'relatedKeyword', key, title, link });
+        results.push({ type: '관련검색어', key, title, link });
       }
     });
+
+
     // 다음 페이지의 URL 찾기
     const nextPageLink: string | undefined = $('a#pnnext').attr('href');
     if (!nextPageLink) {
