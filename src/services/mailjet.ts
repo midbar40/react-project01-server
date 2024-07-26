@@ -10,8 +10,6 @@ const mailjetClient = mailjet.apiConnect(
   mailjetSecretKeys as string
 );
 
-
-
 export const sendEmail = async (email: string): Promise<void> => {
 
   // 랜덤 토큰 생성

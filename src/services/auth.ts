@@ -102,7 +102,11 @@ export const verifyRefreshToken = (req: Request, res: Response) => {
     }
 }
 
-// 관리자 로그인 확인
-export const isAdmin = (req: Request, res: Response) => {
-
+// 관리자 로그인 확인 : dashboard 접근 등 관리자 권한이 필요한 페이지에서 사용
+export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
+    if (req.user && req.user.role === "admin") {
+        next()
+    } else {
+        res.status(401).json({ message: "승인된 관리자가 아닙니다" })
+    }
 }

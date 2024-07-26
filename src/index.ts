@@ -5,7 +5,7 @@ import express, { Express, Request, Response } from "express";
 import sequelize from "./db/sequelize";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import { userRouter, websearchRouter } from "./routes/index";
+import { adminRouter, userRouter, websearchRouter } from "./routes/index";
 
 const app: Express = express();
 const port = process.env.PORT || 5000;
@@ -37,6 +37,7 @@ sequelize.sync({ force : false })
 
 // 라우터 임포트
 app.use("/api/users", userRouter);
+app.use("/api/admins", adminRouter);
 app.use("/api/websearch", websearchRouter);
 
 // 서버 설정

@@ -5,6 +5,7 @@ import sequelize from "../db/sequelize";
 export interface AdminAttributes {
     email: string;
     name: string;
+    role: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -17,6 +18,7 @@ class Admin extends Model<AdminAttributes, AdminCreationAttributes>
     implements AdminAttributes {
     public email!: string;
     public name!: string;
+    public role!: string;
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
 }
@@ -33,6 +35,10 @@ Admin.init(
         name: {
             type: DataTypes.STRING,
             allowNull: false,
+        },
+        role : {
+            type : DataTypes.STRING,
+            allowNull: false
         },
         createdAt: {
             type: DataTypes.DATE,
