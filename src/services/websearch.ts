@@ -55,7 +55,7 @@ interface BrandContentSearchResult extends NaverSearchResult {
   link?: string;
 }
 
-export async function getGoogleSearchResults(query: string, query2: string, pages: number = 3): Promise<GoogleSearchResult[]> {
+export async function getGoogleSearchResults(query: string, query2: string, pages: number = 1): Promise<GoogleSearchResult[]> {
   const results: GoogleSearchResult[] = [];
   let searchUrl: string = `https://www.google.com/search?q=${encodeURIComponent(query) + encodeURIComponent(query2)}`;
 
@@ -148,7 +148,7 @@ export async function getGoogleSearchResults(query: string, query2: string, page
 type CombinedSearchResult = PopularSearchResult | NewsSearchResult | ListSearchResult | QuestionSearchResult | PowerlinkSearchResult | MainbannerSearchResult | BrandContentSearchResult;
 
 
-export async function getNaverSearchResults(query: string, query2: string, pages: number = 3): Promise<NaverSearchResult[]> {
+export async function getNaverSearchResults(query: string, query2: string, pages: number = 1): Promise<NaverSearchResult[]> {
   const results: CombinedSearchResult[] = [];
   let searchUrl: string = `https://search.naver.com/search.naver?where=nexearch&sm=top_hty&fbm=0&ie=utf8&query=${encodeURIComponent(query) + encodeURIComponent(query2)}`;
 

@@ -10,15 +10,10 @@ const mailjetClient = mailjet.apiConnect(
   mailjetSecretKeys as string
 );
 
-interface EmailOptions {
-  email: string;
-  subject: string;
-  text: string;
-  html: string;
-}
 
 
-export const sendEmail = async ({ email, subject, text, html }: EmailOptions): Promise<void> => {
+export const sendEmail = async (email: string): Promise<void> => {
+
   // 랜덤 토큰 생성
   const token = crypto.randomBytes(20).toString('hex');
   // 토큰 DB 저장
@@ -40,8 +35,8 @@ export const sendEmail = async ({ email, subject, text, html }: EmailOptions): P
                 Name: 'seunghyun'
               }
             ],
-            Subject: subject,
-            TextPart: text,
+            Subject: '이메일 인증을 진행해주세요.',
+            TextPart: '아래 링크를 클릭하여 이메일 인증을 진행해주세요.',
             HTMLPart: emailHtml,
             CustomID: 'AppGettingStartedTest',
           }
