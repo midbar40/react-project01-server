@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import {getGoogleSearchResults, getNaverSearchResults} from '../services/websearch';
+import { getGoogleSearchResults, getNaverSearchResults, getYoutubeSearchResults } from '../services/websearch';
 
 const router = Router();
 
@@ -15,4 +15,10 @@ router.post('/naver', async (req, res) => {
   res.json(results);
 });
 
+
+router.post('/youtube', async (req, res) => {
+  const { name, keyword } = req.body;
+  const results = await getYoutubeSearchResults(name, keyword);
+  res.json(results);
+});
 export default router;

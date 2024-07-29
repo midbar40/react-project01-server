@@ -1,6 +1,8 @@
 import fetch from 'node-fetch';
 import * as cheerio from 'cheerio'; 4
 import { v4 } from 'uuid';
+import puppeteer from 'puppeteer';
+
 
 interface GoogleSearchResult {
   key: string;
@@ -18,6 +20,16 @@ interface NaverSearchResult {
   link?: string;
 }
 
+interface YoutubeSearchResult {
+  key: string;
+  type?: string
+  title?: string;
+  channel?: string;
+  hits?: string;
+  link?: string;
+}
+
+// 구글 크롤링결과
 export async function getGoogleSearchResults(brandName: string, keyword: string, pages: number = 1): Promise<GoogleSearchResult[]> {
   const results: GoogleSearchResult[] = [];
   let searchUrl: string = `https://www.google.com/search?q=${encodeURIComponent(keyword)}`;
@@ -44,10 +56,10 @@ export async function getGoogleSearchResults(brandName: string, keyword: string,
       }
     });
     // 구글 스폰서 콘텐츠 코드 텍스트형, pc마다 달라지는지 확인필요
-    $('div.vdQmEd').each((index: number, element: any) => {
+    $('div.uEierd').each((index: number, element: any) => {
       const key: string = v4();
-      const title: string = $(element).find('div.sVXRqc').find('span').text();
-      const content = $(element).find('div.Z6lobc').text();
+      const title: string = $(element).find('div.v5yQqb').find('span').text();
+      const content = $(element).find('div.Va3FIb').text();
       const link: string | undefined = $(element).find('div.v5yQqb').find('a').attr('href');
       if (link) { // 링크가 존재할 때만 결과에 추가
         results.push({ type: '스폰서', key, title, content, link });
@@ -68,7 +80,7 @@ export async function getGoogleSearchResults(brandName: string, keyword: string,
     // 구글 스폰서 콘텐츠 코드 이미지박스형Top위치, pc마다 달라지는지 확인필요
     $('div.pla-unit-container').each((index: number, element: any) => {
       const key: string = v4();
-      const title: string = $(element).find('div.orXoSd > span').text();
+      const title: string = $(element).find('span.pymv4e').text();
       const content: string = $(element).find('div.LbUacb > span').text();
       const link: string | undefined = $(element).find('a').attr('href');
       if (link) { // 링크가 존재할 때만 결과에 추가
@@ -123,6 +135,7 @@ export async function getGoogleSearchResults(brandName: string, keyword: string,
   return results.filter(ele => (ele.title.includes(brandName) || ele.content?.includes(brandName)));
 }
 
+// 네이버 크롤링결과
 export async function getNaverSearchResults(brandName: string, keyword: string, pages: number = 1): Promise<NaverSearchResult[]> {
   const results: NaverSearchResult[] = [];
   let searchUrl: string = `https://search.naver.com/search.naver?where=nexearch&sm=top_hty&fbm=0&ie=utf8&query=${encodeURIComponent(keyword)}`;
@@ -216,3 +229,53 @@ export async function getNaverSearchResults(brandName: string, keyword: string, 
   return results.filter(ele => (ele.title.includes(brandName) || ele.content?.includes(brandName)));
 }
 
+// 유튜브 크롤링결과
+
+export async function getYoutubeSearchResults(brandName: string, keyword: string, pages = 1): Promise<YoutubeSearchResult[]> {
+  const browser = await puppeteer.launch({ headless: true });
+  const page = await browser.newPage();
+  await page.goto(`https://www.youtube.com/results?search_query=${encodeURIComponent(keyword)}`, {
+    waitUntil: 'networkidle2',
+  });
+
+  const results: YoutubeSearchResult[] = [];
+
+  for (let i = 0; i < pages; i++) {
+    // 페이지 끝까지 스크롤
+    await page.evaluate(() => {
+      window.scrollBy(0, window.innerHeight);
+    });
+
+    await new Promise(res => setTimeout(res, 2000));
+
+    const content = await page.content();
+    const $ = cheerio.load(content);
+
+    // 쇼츠
+    $('div.ytd-reel-item-renderer').each((index, element) => {
+      const key: string = v4();
+      const title = $(element).find('span#video-title').text();
+      const hits = $(element).find('div#metadata-line > span').text();
+      const link = $(element).find('a.yt-simple-endpoint').attr('href');
+      if (title) {
+        results.push({ key, type: '쇼츠', title, hits, link });
+      }
+    });
+
+    // 영상
+    $('div.ytd-video-renderer').each((index, element) => {
+      const key: string = v4();
+      const title = $(element).find('a#video-title').text();
+      const channel =  $(element).find('div#text-container').text();
+      const hits = $(element).find('span.inline-metadata-item').text();
+      const link = $(element).find('a#video-title').attr('href');
+      if (title) {
+        results.push({ key, type: '영상', title, channel, hits, link });
+      }
+    });
+  }
+
+  await browser.close();
+
+  return results.filter((ele) => ele.title?.includes(brandName) || ele.channel?.includes(brandName));
+}
