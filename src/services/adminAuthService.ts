@@ -11,6 +11,7 @@ export const checkIsAdminAsEmail = async (email: string): Promise<boolean> => {
     const admin = await Admin.findOne({ where: { email } });
     return !!admin
 }
+
 export const createAdmin = async (adminInfo: AdminCreationAttributes) => {
     const { email, name } = adminInfo
     const newAdmin = await Admin.create({ email, name, role: "admin", createdAt: new Date(), updatedAt: new Date() });

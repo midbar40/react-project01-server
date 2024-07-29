@@ -6,58 +6,21 @@ interface GoogleSearchResult {
   key: string;
   type?: string;
   title: string;
+  content?: string;
   link?: string;
 }
 
 interface NaverSearchResult {
-  type: '인기검색' | '뉴스' | '리스트' | '지식인' | '파워링크' | '메인배너' | '브랜드콘텐츠'
-}
-
-interface PopularSearchResult extends NaverSearchResult {
   key: string;
+  type?: string
   title: string;
+  content?: string;
   link?: string;
 }
 
-interface NewsSearchResult extends NaverSearchResult {
-  key: string;
-  title: string;
-  link?: string;
-}
-
-interface ListSearchResult extends NaverSearchResult {
-  key: string;
-  title: string;
-  link?: string;
-}
-
-interface QuestionSearchResult extends NaverSearchResult {
-  key: string;
-  title: string;
-  link?: string;
-}
-
-interface PowerlinkSearchResult extends NaverSearchResult {
-  key: string;
-  title: string;
-  link?: string;
-}
-
-interface MainbannerSearchResult extends NaverSearchResult {
-  key: string;
-  title: string;
-  link?: string;
-}
-
-interface BrandContentSearchResult extends NaverSearchResult {
-  key: string;
-  title: string;
-  link?: string;
-}
-
-export async function getGoogleSearchResults(query: string, query2: string, pages: number = 1): Promise<GoogleSearchResult[]> {
+export async function getGoogleSearchResults(brandName: string, keyword: string, pages: number = 1): Promise<GoogleSearchResult[]> {
   const results: GoogleSearchResult[] = [];
-  let searchUrl: string = `https://www.google.com/search?q=${encodeURIComponent(query) + encodeURIComponent(query2)}`;
+  let searchUrl: string = `https://www.google.com/search?q=${encodeURIComponent(keyword)}`;
 
   for (let i = 0; i < pages; i++) {
     const response = await fetch(searchUrl, {
@@ -68,31 +31,48 @@ export async function getGoogleSearchResults(query: string, query2: string, page
     const data = await response.text(); // fetch의 결과를 text로 읽어옴
 
     const $ = cheerio.load(data);
+
+
     // 검색 결과 추출
     $('div.g').each((index: number, element: any) => {
       const key: string = v4();
       const title: string = $(element).find('h3').text();
+      const content = $(element).find('span').text();
       const link: string | undefined = $(element).find('a').attr('href');
       if (link) { // 링크가 존재할 때만 결과에 추가
-        results.push({ type:'일반검색',key, title, link });
+        results.push({ type: '일반검색', key, title, content, link });
       }
     });
     // 구글 스폰서 콘텐츠 코드 텍스트형, pc마다 달라지는지 확인필요
-    $('div.v5yQqb').each((index: number, element: any) => {
+    $('div.vdQmEd').each((index: number, element: any) => {
       const key: string = v4();
-      const title: string = $(element).find('span').text();
-      const link: string | undefined = $(element).find('a').attr('href');
+      const title: string = $(element).find('div.sVXRqc').find('span').text();
+      const content = $(element).find('div.Z6lobc').text();
+      const link: string | undefined = $(element).find('div.v5yQqb').find('a').attr('href');
       if (link) { // 링크가 존재할 때만 결과에 추가
-        results.push({ type: '스폰서', key, title, link });
+        results.push({ type: '스폰서', key, title, content, link });
       }
     });
-     // 구글 스폰서 콘텐츠 코드 이미지박스형, pc마다 달라지는지 확인필요
-     $('div.top-pla-group-inner').each((index: number, element: any) => {
+
+    // 구글 스폰서 콘텐츠 코드 이미지박스형 우측면위치, pc마다 달라지는지 확인필요
+    $('div.cu-container').each((index: number, element: any) => {
       const key: string = v4();
-      const title: string = $(element).find('span').text();
+      const title: string = $(element).find('div.orXoSd > span').text();
+      const content: string = $(element).find('div.LbUacb > span').text();
       const link: string | undefined = $(element).find('a').attr('href');
       if (link) { // 링크가 존재할 때만 결과에 추가
-        results.push({ type: '스폰서', key, title, link });
+        results.push({ type: '스폰서', key, title, content, link });
+      }
+    });
+
+    // 구글 스폰서 콘텐츠 코드 이미지박스형Top위치, pc마다 달라지는지 확인필요
+    $('div.pla-unit-container').each((index: number, element: any) => {
+      const key: string = v4();
+      const title: string = $(element).find('div.orXoSd > span').text();
+      const content: string = $(element).find('div.LbUacb > span').text();
+      const link: string | undefined = $(element).find('a').attr('href');
+      if (link) { // 링크가 존재할 때만 결과에 추가
+        results.push({ type: '스폰서', key, title, content, link });
       }
     });
     // 구글 동영상
@@ -104,8 +84,8 @@ export async function getGoogleSearchResults(query: string, query2: string, page
         results.push({ type: '동영상', key, title, link });
       }
     });
-     // 구글 이미지
-     $('a.EZAeBe').each((index: number, element: any) => {
+    // 구글 이미지
+    $('a.EZAeBe').each((index: number, element: any) => {
       const key: string = v4();
       const title: string = $(element).find('div.toI8Rb').text();
       const link: string | undefined = $(element).attr('href');
@@ -136,21 +116,16 @@ export async function getGoogleSearchResults(query: string, query2: string, page
     // 다음 페이지의 URL 찾기
     const nextPageLink: string | undefined = $('a#pnnext').attr('href');
     if (!nextPageLink) {
-      console.log('여기 들어오긴하니')
       break; // 다음 페이지가 없으면 종료
     }
     searchUrl = `https://www.google.com${nextPageLink}`;
   }
-
-  return results;
+  return results.filter(ele => (ele.title.includes(brandName) || ele.content?.includes(brandName)));
 }
 
-type CombinedSearchResult = PopularSearchResult | NewsSearchResult | ListSearchResult | QuestionSearchResult | PowerlinkSearchResult | MainbannerSearchResult | BrandContentSearchResult;
-
-
-export async function getNaverSearchResults(query: string, query2: string, pages: number = 1): Promise<NaverSearchResult[]> {
-  const results: CombinedSearchResult[] = [];
-  let searchUrl: string = `https://search.naver.com/search.naver?where=nexearch&sm=top_hty&fbm=0&ie=utf8&query=${encodeURIComponent(query) + encodeURIComponent(query2)}`;
+export async function getNaverSearchResults(brandName: string, keyword: string, pages: number = 1): Promise<NaverSearchResult[]> {
+  const results: NaverSearchResult[] = [];
+  let searchUrl: string = `https://search.naver.com/search.naver?where=nexearch&sm=top_hty&fbm=0&ie=utf8&query=${encodeURIComponent(keyword)}`;
 
   for (let i = 0; i < pages; i++) {
     const response = await fetch(searchUrl, {
@@ -162,39 +137,43 @@ export async function getNaverSearchResults(query: string, query2: string, pages
     const $ = cheerio.load(data);
 
     // 인기글
-    $('div.title_area').each((index: number, element: any) => {
+    $('div.view_wrap').each((index: number, element: any) => {
       const key: string = v4();
-      const title: string = $(element).text()
-      const link: string | undefined = $(element).find('a').attr('href')
+      const title: string = $(element).find('div.title_area').text()
+      const content: string = $(element).find('div.dsc_area > a').text()
+      const link: string | undefined = $(element).find('div.title_area > a').attr('href')
       if (link) {
-        results.push({ key, type: '인기검색', title, link });
+        results.push({ key, type: '인기검색', title, content, link });
       }
     })
-    // 뉴스
-    $('a.news_tit').each((index: number, element: any) => {
+    // 뉴스news_contents
+    $('div.news_contents').each((index: number, element: any) => {
       const key: string = v4();
-      const title: string = $(element).text()
-      const link: string | undefined = $(element).attr('href')
+      const title: string = $(element).find('a.news_tit').text()
+      const content: string = $(element).find('div.dsc_wrap').text()
+      const link: string | undefined = $(element).find('a.news_tit').attr('href')
       if (link) {
-        results.push({ key, type: '뉴스', title, link });
+        results.push({ key, type: '뉴스', title, content, link });
       }
     })
-    // 리스트글 : 검색결과 더보기 
-    $('div.total_tit').each((index: number, element: any) => {
+    // 리스트글 : 검색결과 더보기 lst_total
+    $('div. total_group').each((index: number, element: any) => {
       const key: string = v4();
-      const title: string = $(element).text()
-      const link: string | undefined = $(element).find('a').attr('href')
+      const title: string = $(element).find('div.total_tit').text()
+      const content: string = $(element).find('div.total_dsc_wrap').text()
+      const link: string | undefined = $(element).find('a.link_tit').attr('href')
       if (link) {
-        results.push({ key, type: '리스트', title, link });
+        results.push({ key, type: '리스트', title, content, link });
       }
     })
-    // 지식인
-    $('div.question_group').each((index: number, element: any) => {
+    // 지식인 lst_nkin
+    $('div.kin_wrap').each((index: number, element: any) => {
       const key: string = v4();
-      const title: string = $(element).text()
-      const link: string | undefined = $(element).find('a').attr('href')
+      const title: string = $(element).find('div.question_txt').text()
+      const content = $(element).find('div.question_txt > div.answer_area').text()
+      const link: string | undefined = $(element).find('div.question_txt > a').attr('href')
       if (link) {
-        results.push({ key, type: '지식인', title, link });
+        results.push({ key, type: '지식인', title, content, link });
       }
     })
     // 파워링크
@@ -215,13 +194,14 @@ export async function getNaverSearchResults(query: string, query2: string, pages
         results.push({ key, type: '메인배너', title, link });
       }
     })
-    // 브랜드콘텐츠 : 쿼리가 하나일 때만 검색결과가 존재한다
-    $('a.fds-comps-right-image-text-title').each((index: number, element: any) => {
+    // 브랜드콘텐츠, 인플루언서 참여콘텐츠, 내돈내산 콘텐츠
+    $('div.fds-comps-right-image-content-container').each((index: number, element: any) => {
       const key: string = v4();
-      const title: string = $(element).text()
-      const link: string | undefined = $(element).attr('href')
+      const title: string = $(element).find('span.uqygfkxiRj7Y5r_cvxbX').text()
+      const content: string = $(element).find('span.uqygfkxiRj7Y5r_cvxbX').text()
+      const link: string | undefined = $(element).find('div.fds-comps-right-image-text-container > a:first').attr('href')
       if (link) {
-        results.push({ key, type: '브랜드콘텐츠', title, link });
+        results.push({ key, type: '콘텐츠', title, content, link });
       }
     })
 
@@ -233,6 +213,6 @@ export async function getNaverSearchResults(query: string, query2: string, pages
     searchUrl = `https://search.naver.com/search.naver${nextPageLink}`;
   }
 
-  return results;
+  return results.filter(ele => (ele.title.includes(brandName) || ele.content?.includes(brandName)));
 }
 
