@@ -10,12 +10,10 @@ const mailjetClient = mailjet.apiConnect(
   mailjetSecretKeys as string
 );
 
-export const sendEmail = async (email: string): Promise<void> => {
-
-  // 랜덤 토큰 생성
-  const token = crypto.randomBytes(20).toString('hex');
-  // 토큰 DB 저장
-  const verificationLink = `http://localhost:5000/api/users/verify-email?token=${token}`
+export const sendEmail = async (email: string, path: string, token:string, sessionID: string): Promise<void> => {
+  // redis에 email과 token을 저장, 만료기한을 설정
+  console.log('sendEmail', sessionID)
+  const verificationLink = `http://localhost:5000/api/${path}/verify-email?token=${token}&email=${email}&sessionID=${sessionID}` 
   const emailHtml = `<h4>아래 링크를 클릭하여 이메일 인증을 진행해주세요.</h4><br><h3><a href='${verificationLink}'>이메일 인증 링크</a></h3>`
   try {
     const request = mailjetClient
@@ -33,7 +31,7 @@ export const sendEmail = async (email: string): Promise<void> => {
                 Name: 'seunghyun'
               }
             ],
-            Subject: '이메일 인증을 진행해주세요.',
+            Subject: 'PC에서 이메일 인증을 진행해주세요, 모바일 환경에서는 인증이 되지 않습니다.',
             TextPart: '아래 링크를 클릭하여 이메일 인증을 진행해주세요.',
             HTMLPart: emailHtml,
             CustomID: 'AppGettingStartedTest',
@@ -42,7 +40,7 @@ export const sendEmail = async (email: string): Promise<void> => {
       });
 
     const result = await request;
-    console.log('sendEmail result :', result.body)
+    // console.log('sendEmail result :', result.body)
   } catch (err: any) {
     console.error(err.statusCode);
   }

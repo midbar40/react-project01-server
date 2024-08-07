@@ -3,29 +3,43 @@ import { verifyAccessToken, verifyRefreshToken, setAccessTokenCookie, setRefresh
 import { checkIsUserAsEmail, createUser, logout, login, getUserInfo } from "../services/userAuthService"
 import { sendEmail } from "../services/mailjet"
 import { sendEventToClients, setServerSentEvent, handleClientDisconnect } from "../services/eventService"
+import { client } from '../services/redis'
+import crypto from 'crypto';
 
 const router = Router();
-const emails: EmailMap = {}; // 이메일을 저장할 객체
-
-interface EmailMap {
-  [key: string]: string;
-}
 
 // 최초 회원가입화면에서 회원가입 버튼 클릭
 router.post("/emailAuth", async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
-    const isUser = await checkIsUserAsEmail(email)
+    const sessionID = req.sessionID; // 새 요청마다 고유한 세션 ID 생성
+    const token = crypto.randomBytes(20).toString('hex');
+
+    // 기존의 세션 ID가 존재할 경우 삭제 (기존 요청 무효화)
+    const existingSessionID = await client.hGet('user:' + email, 'sessionID');
+    if (existingSessionID) {
+      await client.del(existingSessionID);
+    }
+
+    // 새로 생성된 세션 ID와 토큰을 Redis에 저장
+    await client.hSet(sessionID, {
+      email: email,
+      token: token
+    });
+    await client.hSet('user:' + email, { sessionID });
+
+    const isUser = await checkIsUserAsEmail(email);
     if (isUser) {
       res.status(400).json({ message: "이미 존재하는 회원입니다" });
     } else {
-      const result = sendEmail(email)
-      res.status(200).json({ message: "이메일 전송 성공", result });
+      const result = await sendEmail(email, 'users', token, sessionID);
+      res.status(200).json({ message: "이메일 전송 성공", sessionID });
     }
   } catch (error) {
+    console.error("Error in emailAuth:", error);
     res.status(400).json({ message: "이메일 전송 실패" });
   }
-})
+});
 
 //  Servser-Sent-Event 설정
 router.get('/events', (req: Request, res: Response) => {
@@ -37,52 +51,67 @@ router.get('/events', (req: Request, res: Response) => {
 
 // 이메일 인증 라우터
 router.get('/verify-email', async (req: Request, res: Response) => {
-  const email = emails["email"]
-  const isUser = await checkIsUserAsEmail(email)
-  const { token } = req.query as { token?: string };
+  const { token, sessionID, email } = req.query as { token?: string, sessionID?: string, email: string };
 
-  if (isUser) {// 로그인 : 등록된 유저이면 토큰을 확인하고, login을 위한 쿠키를 설정하고, 이메일 인증 완료 메시지를 보냄
-    if (token) {
-      setAccessTokenCookie(req, res)
-      setRefreshTokenCookie(req, res)
-      sendEventToClients('user_verified')
-      res.send(
-        `
-        <script>
-            alert('이메일 인증이 완료되었습니다.');
-            window.close();
-        </script>
-        `
-      );
+  if (!sessionID || !token) {
+    res.status(400).send(
+      `
+      <script>
+          alert('잘못된 접근입니다.');
+          window.close();
+      </script>
+      `
+    );
+    return;
+  }
+
+  const redisEmail = await client.hGet(sessionID, 'email');
+  const redisToken = await client.hGet(sessionID, 'token');
+
+  if (!redisEmail || !redisToken) {
+    res.status(400).send(
+      `
+      <script>
+          alert('세션이 만료되었거나 잘못된 세션입니다.');
+          window.close();
+      </script>
+      `
+    );
+    return;
+  }
+
+  // 토큰 검증
+  if (redisToken === token && redisEmail === email) {
+    const isUser = await checkIsUserAsEmail(email);
+
+    // 토큰 사용 후 삭제 (무효화)
+    await client.del(sessionID);
+
+    if (isUser) {
+      setAccessTokenCookie(req, res);
+      setRefreshTokenCookie(req, res);
+      sendEventToClients('user_verified');
     } else {
-      res.send(
-        `
-        <script>
-            alert('이메일 인증에 실패하였습니다.');
-            window.close();
-        </script>
-        `
-      );
+      sendEventToClients('verified');
     }
-  } else {// 회원가입 : 등록된 유저가 아니면 토큰을 확인하고 이메일 인증 확인 메시지를 보냄
-    if (token) {
-      sendEventToClients('verified')
-      res.send(
-        `
+
+    res.send(
+      `
       <script>
           alert('이메일 인증이 완료되었습니다.');
           window.close();
       </script>
       `
-      );
-    } else {
+    );
+  } else {
+    res.status(400).send(
       `
-    <script>
-        alert('이메일 인증에 실패하였습니다.');
-        window.close();
-    </script>
-    `
-    }
+      <script>
+          alert('잘못된 토큰입니다.');
+          window.close();
+      </script>
+      `
+    );
   }
 });
 
@@ -111,8 +140,13 @@ router.post("/signup", async (req: Request, res: Response) => {
 router.post("/login", async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
-    emails["email"] = email;
-    const loginStatus = await login(email)
+    const sessionID = req.sessionID
+    const token = crypto.randomBytes(20).toString('hex');
+    await client.hSet(sessionID, {
+      email: email,
+      token: token
+    })
+    const loginStatus = await login(email, token, sessionID)
     if (loginStatus) {
       res.status(200).json({ message: "success" });
     } else {
@@ -130,8 +164,10 @@ router.post("/login", async (req: Request, res: Response) => {
 // user 정보 가져오기
 router.get("/info", verifyAccessToken, async (req: Request, res: Response) => {
   try {
-    const email = emails["email"]
-    const userInfo = await getUserInfo(email)
+    // const email = emails["email"]
+    const sessionID = req.sessionID
+    const email = await client.hGet(sessionID, 'email')
+    const userInfo = await getUserInfo(email as string)
     if (userInfo) {
       res.status(200).json({ message: 'success', data: userInfo });
     } else {
@@ -149,7 +185,7 @@ router.get("/info", verifyAccessToken, async (req: Request, res: Response) => {
 // 로그아웃
 router.get("/logout", async (req: Request, res: Response) => {
   try {
-    logout(res)
+    logout(res, req)
     res.status(200).json({ message: '로그아웃에 성공했습니다.' })
   } catch (error) {
     res.status(401).json({ message: '로그아웃에 실패했습니다.' })

@@ -30,7 +30,7 @@ export const generateRefreshToken = (): string => {
 // 쿠키 발행 함수 : accessToken이 담긴 쿠키
 export const setAccessTokenCookie = (req: Request, res: Response) => {
     const accessToken = generateAccessToken();
-    res.cookie('accessToken', accessToken, {
+    const cookie = res.cookie('accessToken', accessToken, { // signup에서 쿠키 생성이 되지않는 오류가 있음
         path: '/',
         expires: new Date(Date.now() + 1000 * 60 * 15), // 15분
         httpOnly: true,
@@ -43,7 +43,7 @@ export const setAccessTokenCookie = (req: Request, res: Response) => {
 // 쿠키 발행 함수 : accessToken이 담긴 쿠키
 export const setRefreshTokenCookie = (req: Request, res: Response) => {
     const refreshToken = generateRefreshToken();
-    res.cookie('refreshToken', refreshToken, {
+    res.cookie('refreshToken', refreshToken, { // signup에서 쿠키 생성이 되지않는 오류가 있음
         path: '/',
         expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7), // 7일
         httpOnly: true,
@@ -85,6 +85,7 @@ export const verifyAccessToken = (req: Request, res: Response, next: NextFunctio
 // resfreshToken 검증
 export const verifyRefreshToken = (req: Request, res: Response) => {
     const cookieHeader = req.headers.cookie
+    console.log('cookieHeader', cookieHeader)
     if (!cookieHeader) {
         res.status(401).json({ message: 'cookie is not supplied' }); // 쿠키에 토큰이 없는 경우
     } else {

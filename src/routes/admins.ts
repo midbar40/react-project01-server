@@ -3,23 +3,29 @@ import { verifyAccessToken, verifyRefreshToken, setAccessTokenCookie, setRefresh
 import { checkIsAdminAsEmail, createAdmin, logout, login, getAdminInfo } from "../services/adminAuthService"
 import { sendEmail } from "../services/mailjet"
 import { sendEventToClients, setServerSentEvent, handleClientDisconnect } from "../services/eventService"
+import { connectRedis, client } from '../services/redis'
+import crypto from 'crypto';
 
 const router = Router();
-const emails: EmailMap = {}; // 이메일을 저장할 객체
 
-interface EmailMap {
-  [key: string]: string;
-}
 
 // 최초 회원가입화면에서 회원가입 버튼 클릭
 router.post("/emailAuth", async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
+    const sessionID = req.sessionID
+    const token = crypto.randomBytes(20).toString('hex');
+    await connectRedis()
+    await client.hSet(sessionID, {
+      email : email,
+      token : token
+    })
+    req.session.id = sessionID
     const isAdmin = await checkIsAdminAsEmail(email)
     if (isAdmin) {
       res.status(400).json({ message: "이미 존재하는 관리자입니다" });
     } else {
-      const result = sendEmail(email)
+      const result = sendEmail(email, 'admins', token, sessionID)
       res.status(200).json({ message: "이메일 전송 성공", result });
     }
   } catch (error) {
@@ -37,12 +43,15 @@ router.get('/events', (req: Request, res: Response) => {
 
 // 이메일 인증 라우터
 router.get('/verify-email', async (req: Request, res: Response) => {
-  const email = emails["email"]
-  const isAdmin = await checkIsAdminAsEmail(email)
-  const { token } = req.query as { token?: string };
+  
+  const { token, sessionID } = req.query as { token?: string, sessionID?: string};
+  const email= await client.hGet(sessionID as string, 'email')
+  const redisToken = await client.hGet(sessionID as string, 'token')
+
+  const isAdmin = await checkIsAdminAsEmail(email as string)
 
   if (isAdmin) {// 로그인 : 등록된 유저이면 토큰을 확인하고, login을 위한 쿠키를 설정하고, 이메일 인증 완료 메시지를 보냄
-    if (token) {
+    if (redisToken === token) {
       setAccessTokenCookie(req, res)
       setRefreshTokenCookie(req, res)
       sendEventToClients('user_verified')
@@ -65,7 +74,7 @@ router.get('/verify-email', async (req: Request, res: Response) => {
       );
     }
   } else {// 회원가입 : 등록된 유저가 아니면 토큰을 확인하고 이메일 인증 확인 메시지를 보냄
-    if (token) {
+    if (redisToken === token) {
       sendEventToClients('verified')
       res.send(
         `
@@ -89,7 +98,7 @@ router.get('/verify-email', async (req: Request, res: Response) => {
 // 정보 모두 입력 후 회원가입 버튼 클릭
 router.post("/signup", async (req: Request, res: Response) => {
   try {
-    const { email, company, name, contact } = req.body;
+    const { email, name } = req.body;
     const isAdmin = await checkIsAdminAsEmail(email)
     if (isAdmin) {
       res.status(400).json({ message: "aleadyExist" });
@@ -111,8 +120,14 @@ router.post("/signup", async (req: Request, res: Response) => {
 router.post("/login", async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
-    emails["email"] = email;
-    const loginStatus = await login(email)
+    const sessionID = req.sessionID
+    const token = crypto.randomBytes(20).toString('hex');
+    await client.hSet(sessionID, {
+      email : email,
+      token : token
+    })
+    // emails["email"] = email;
+    const loginStatus = await login(email, token, sessionID)
     if (loginStatus) {
       res.status(200).json({ message: "success" });
     } else {
@@ -130,8 +145,10 @@ router.post("/login", async (req: Request, res: Response) => {
 // user 정보 가져오기
 router.get("/info", verifyAccessToken, async (req: Request, res: Response) => {
   try {
-    const email = emails["email"]
-    const AdminInfo = await getAdminInfo(email)
+    // const email = emails["email"]
+    const sessionID = req.session.id
+    const email= await client.hGet(sessionID, 'email')
+    const AdminInfo = await getAdminInfo(email as string)
     if (AdminInfo) {
       res.status(200).json({ message: 'success', data: AdminInfo });
     } else {
@@ -149,7 +166,7 @@ router.get("/info", verifyAccessToken, async (req: Request, res: Response) => {
 // 로그아웃
 router.get("/logout", async (req: Request, res: Response) => {
   try {
-    logout(res)
+    logout(res, req)
     res.status(200).json({ message: '로그아웃에 성공했습니다.' })
   } catch (error) {
     res.status(401).json({ message: '로그아웃에 실패했습니다.' })

@@ -1,6 +1,7 @@
 import Admin from "../models/Admin";
 import { Router, Request, Response } from "express";
 import { sendEmail } from "../services/mailjet"
+import { connectRedis, client } from '../services/redis'
 
 interface AdminCreationAttributes {
     email: string;
@@ -18,17 +19,19 @@ export const createAdmin = async (adminInfo: AdminCreationAttributes) => {
     return newAdmin;
 }
 
-export const logout = (res: Response) => {
+export const logout = async (res: Response, req: Request) => {
     res.clearCookie('accessToken')
     res.clearCookie('refreshToken')
+     await client.del(req.session.id)
+    req.session.id = ''
 }
 
-export const login = async (email: string): Promise<boolean> => {
+export const login = async (email: string, token: string, sessionID:string): Promise<boolean> => {
     const admin = await Admin.findOne({ where: { email } });
     if (!admin) {
         throw new Error("존재하지 않는 관리자입니다")
     } else {
-        await sendEmail(email)
+        await sendEmail(email, 'admins', token, sessionID)
         return true
     }
 }
